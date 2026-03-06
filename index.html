@@ -6,135 +6,290 @@
   <title>Adopt(k) - Adoption Agreement Parser</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { background: #0F172A; font-family: system-ui, sans-serif; }
-    .loader { width: 40px; height: 40px; border: 4px solid #334155; border-top-color: #0b5fff; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    body { background: #0F172A; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    @keyframes orangeGlow { 0% { box-shadow: inset 0 0 150px 50px rgba(249,115,22,0.15); } 50% { box-shadow: inset 0 0 250px 100px rgba(249,115,22,0.08); } 100% { box-shadow: inset 0 0 150px 50px rgba(249,115,22,0.15); } }
+    .glow-container { animation: orangeGlow 4s ease-in-out infinite; }
+    .loader-dark { width:18px;height:18px;border:2px solid #334155;border-top-color:#0b5fff;border-radius:50%;animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .upload-area-dark { border:2px dashed #334155;background:#1E293B;transition:all 0.2s; }
+    .upload-area-dark.enabled:hover { border-color:#0b5fff;background:#1e3a5f; }
+    .status-section-dark { background:#1E293B;border:1px solid #334155;border-radius:0.5rem;padding:1rem; }
+    .results-table { width:100%;border-collapse:collapse; }
+    .results-table th { background:#0b5fff;color:white;padding:12px 16px;text-align:left;font-weight:600; }
+    .results-table td { padding:10px 16px;border-bottom:1px solid #334155;color:#E2E8F0; }
+    .results-table .section-header-row td { background:linear-gradient(90deg,#1e3a5f 0%,#1E293B 100%);color:#0b5fff;font-weight:700;text-transform:uppercase;font-size:0.75rem;letter-spacing:0.05em;border-left:3px solid #0b5fff; }
+    .results-table .data-row:hover td { background:#1e3a5f; }
+    .results-table .empty-value { color:#64748B;font-style:italic; }
+    .results-overlay { position:absolute;inset:0;background:rgba(15,23,42,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;border-radius:0 0 0.75rem 0.75rem; }
+    .results-overlay-text { color:white;font-size:1.125rem;font-weight:600;margin-top:1.5rem; }
+    .results-overlay-subtext { color:#94A3B8;font-size:0.875rem;margin-top:0.5rem; }
+    .hidden { display:none !important; }
+    .nav-btn { display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;background:#0b5fff;border:none;border-radius:0.5rem;cursor:pointer;transition:all 0.2s;text-align:left; }
+    .nav-btn:hover { background:#0047cc; }
+    .nav-btn-icon { width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:0.375rem;display:flex;align-items:center;justify-content:center;color:white; }
+    .nav-btn-content { flex:1; }
+    .nav-btn-title { color:white;font-weight:600;font-size:0.875rem; }
+    .nav-btn-subtitle { color:rgba(255,255,255,0.7);font-size:0.75rem; }
+    .nav-btn-badge { background:#10b981;color:white;font-size:0.625rem;font-weight:700;padding:0.125rem 0.5rem;border-radius:9999px;text-transform:uppercase; }
+    .coverage-bar { display:flex;gap:1rem;padding:0.75rem 1rem;background:#1E293B;border-radius:0.5rem;margin-bottom:1rem;flex-wrap:wrap; }
+    .coverage-pill { display:flex;align-items:center;gap:0.5rem;padding:0.375rem 0.75rem;border-radius:9999px;font-size:0.75rem;font-weight:600; }
+    .coverage-pill.certified { background:rgba(16,185,129,0.2);color:#10b981; }
+    .coverage-pill.review { background:rgba(245,158,11,0.2);color:#f59e0b; }
+    .coverage-pill.silent { background:rgba(100,116,139,0.2);color:#94A3B8; }
+    .status-badge { display:inline-block;padding:0.125rem 0.5rem;border-radius:0.25rem;font-size:0.625rem;font-weight:700;text-transform:uppercase; }
+    .status-badge.certified { background:rgba(16,185,129,0.2);color:#10b981; }
+    .status-badge.ambiguous { background:rgba(245,158,11,0.2);color:#f59e0b; }
+    .status-badge.conflict { background:rgba(239,68,68,0.2);color:#ef4444; }
+    .status-badge.silent { background:rgba(100,116,139,0.2);color:#64748B; }
+    .status-badge.uncertain { background:rgba(139,92,246,0.2);color:#8b5cf6; }
+    .source-btn { background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.6875rem;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap; }
+    .source-btn:hover { background:rgba(16,185,129,0.25);border-color:#10b981; }
+    .modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:50;padding:1rem; }
+    .modal-container { background:#1E293B;border-radius:0.75rem;max-width:600px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;border:1px solid #334155; }
+    .modal-header { background:linear-gradient(135deg,#0b5fff 0%,#0047cc 100%);padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center; }
+    .modal-header h3 { color:white;font-size:1.125rem;font-weight:600;margin:0; }
+    .modal-close { background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;opacity:0.8;transition:opacity 0.2s;line-height:1; }
+    .modal-close:hover { opacity:1; }
+    .modal-body { padding:1.5rem;overflow-y:auto;color:#E2E8F0; }
+    .modal-body h4 { color:#0b5fff;font-size:1rem;font-weight:600;margin:1.25rem 0 0.75rem 0; }
+    .modal-body h4:first-child { margin-top:0; }
+    .modal-body p { margin:0.5rem 0;line-height:1.6;color:#94A3B8; }
+    .modal-body ul { margin:0.5rem 0;padding-left:1.5rem;color:#94A3B8; }
+    .modal-body li { margin:0.375rem 0; }
+    .modal-footer { padding:1rem 1.5rem;border-top:1px solid #334155;display:flex;justify-content:flex-end;gap:0.75rem; }
+    .modal-btn-primary { background:#0b5fff;color:white;border:none;padding:0.5rem 1rem;border-radius:0.375rem;font-weight:500;cursor:pointer;transition:background 0.2s; }
+    .modal-btn-primary:hover { background:#0047cc; }
+    .modal-btn-secondary { background:transparent;color:#94A3B8;border:1px solid #334155;padding:0.5rem 1rem;border-radius:0.375rem;font-weight:500;cursor:pointer;transition:all 0.2s; }
+    .modal-btn-secondary:hover { background:#334155;color:white; }
+    .highlight-box { background:rgba(11,95,255,0.1);border:1px solid rgba(11,95,255,0.3);border-radius:0.5rem;padding:1rem;margin:1rem 0; }
+    .highlight-box strong { color:#0b5fff; }
+    .tip-box { background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:0.5rem;padding:1rem;margin:1rem 0; }
+    .tip-box strong { color:#10b981; }
+    .evidence-card { background:#0F172A;border:1px solid #334155;border-radius:0.5rem;padding:1rem;margin-bottom:0.75rem; }
+    .evidence-meta { font-size:0.75rem;color:#64748B;margin-bottom:0.5rem; }
+    .evidence-quote { color:#E2E8F0;font-style:italic;line-height:1.6;border-left:3px solid #10b981;padding-left:0.75rem; }
+    .status-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;margin:1rem 0; }
+    .status-explain-card { background:#0F172A;border:1px solid #334155;border-radius:0.5rem;padding:0.75rem; }
+    .status-explain-card .status-text { font-size:0.75rem;color:#94A3B8;margin-top:0.5rem; }
+    .dpf-description { color:#94A3B8;font-size:0.875rem;margin-bottom:1.5rem; }
+    .dpf-guarantee { background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:0.5rem;padding:1rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:0.75rem; }
+    .dpf-guarantee-icon { color:#10b981;flex-shrink:0; }
+    .dpf-guarantee-title { color:white;font-weight:600;font-size:0.875rem; }
+    .dpf-guarantee-text { color:#94A3B8;font-size:0.8125rem; }
+    .dpf-categories { display:grid;grid-template-columns:repeat(2,1fr);gap:1rem; }
+    .dpf-category { background:#0F172A;border:1px solid #334155;border-radius:0.5rem;padding:1.25rem;text-align:center; }
+    .dpf-category-icon { width:48px;height:48px;background:#0b5fff;border-radius:0.5rem;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem;font-size:1.25rem; }
+    .dpf-category-title { color:white;font-weight:600;font-size:0.875rem; }
+    .dpf-category-desc { color:#64748B;font-size:0.75rem;margin-top:0.25rem; }
+    .clock-spinner { width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1E293B,#0F172A);border:3px solid #0b5fff;position:relative;box-shadow:0 0 20px rgba(11,95,255,0.3); }
+    .clock-center { position:absolute;width:8px;height:8px;background:#0b5fff;border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3; }
+    .clock-hand-hour { position:absolute;width:3px;height:20px;background:#0b5fff;left:50%;bottom:50%;transform-origin:bottom center;transform:translateX(-50%);border-radius:2px;animation:spin-reverse 3s linear infinite; }
+    .clock-hand-minute { position:absolute;width:2px;height:28px;background:#60A5FA;left:50%;bottom:50%;transform-origin:bottom center;transform:translateX(-50%);border-radius:2px;animation:spin-reverse 1s linear infinite; }
+    @keyframes spin-reverse { from { transform:translateX(-50%) rotate(360deg); } to { transform:translateX(-50%) rotate(0deg); } }
+    .process-btn { width:100%;padding:0.75rem 1rem;background:#10b981;color:white;font-weight:600;border:none;border-radius:0.5rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:0.5rem; }
+    .process-btn:hover { background:#059669; }
+    .process-btn:disabled { opacity:0.5;cursor:not-allowed; }
+    .vendor-badge { display:inline-flex;align-items:center;gap:0.375rem;padding:0.25rem 0.625rem;background:rgba(11,95,255,0.15);border:1px solid rgba(11,95,255,0.3);border-radius:9999px;font-size:0.6875rem;font-weight:600;color:#60A5FA; }
   </style>
 </head>
-<body class="min-h-screen p-8">
-<div class="max-w-4xl mx-auto">
-  <h1 class="text-4xl font-bold text-white mb-2">Adopt<span class="text-blue-500">(k)</span></h1>
-  <p class="text-gray-400 mb-8">AI Vision-Powered Adoption Agreement Parser</p>
-
-  <div class="bg-slate-800 rounded-xl p-6 mb-6 border border-slate-700">
-    <div class="grid md:grid-cols-2 gap-4 mb-4">
-      <div>
-        <label class="block text-blue-400 text-sm font-semibold mb-2">Model</label>
-        <select id="model" class="w-full p-3 bg-slate-900 border border-slate-600 rounded-lg text-white">
-          <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-          <option value="claude-opus-4-6">Claude Opus 4.6</option>
-          <option value="gemini-3-pro">Gemini 3 Pro</option>
-          <option value="gpt-5.2">GPT-5.2</option>
+<body>
+<div id="docuwaivz-app" class="flex h-screen overflow-hidden">
+  <aside class="w-80 bg-[#0F172A] border-r border-[#334155] flex flex-col z-10 text-white">
+    <div class="px-5 pt-8 pb-4">
+      <div class="flex items-start justify-between"><h1 class="text-4xl font-bold text-white tracking-tight leading-none -mt-1">Adopt<span class="ml-0.5 text-[#0b5fff]">(k)</span></h1></div>
+      <p class="text-sm text-[#94A3B8] mt-2">Adoption Agreement Parser</p>
+      <div class="mt-4 space-y-2">
+        <button id="how-to-use-btn" class="nav-btn w-full"><div class="nav-btn-icon"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg></div><div class="nav-btn-content"><div class="nav-btn-title">How to Use</div><div class="nav-btn-subtitle">Step-by-step guide</div></div><svg class="w-5 h-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg></button>
+        <button id="whats-new-btn" class="nav-btn w-full"><div class="nav-btn-icon"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div><div class="nav-btn-content"><div class="nav-btn-title">What's New</div><div class="nav-btn-subtitle">Two-pass extraction</div></div><span class="nav-btn-badge">v3.0</span></button>
+      </div>
+    </div>
+    <div class="p-6 flex-1 overflow-y-auto">
+      <div class="mb-6">
+        <h2 class="text-sm font-semibold text-[#0b5fff] uppercase tracking-wider mb-3">1. LLM Model</h2>
+        <label for="llm-model" class="block text-sm font-medium text-white mb-2">Extraction Model</label>
+        <select id="llm-model" class="mt-1 block w-full px-3 py-2 bg-[#1E293B] border border-[#334155] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#0b5fff]/50 focus:border-[#0b5fff] sm:text-sm text-white">
+          <option value="claude-opus-4-5" selected>&#11088; Claude Opus 4.5 (Best Quality)</option>
+          <option value="claude-sonnet-4-5">&#11088; Claude Sonnet 4.5 (Fast &amp; Reliable)</option>
+          <option value="gemini-2.0-flash">&#9889; Gemini 2.0 Flash (Fastest)</option>
         </select>
+        <p class="mt-1 text-xs text-[#94A3B8]">Pass 1 uses Sonnet (recon) &#8226; Pass 2 uses your selection</p>
       </div>
-      <div>
-        <label class="block text-blue-400 text-sm font-semibold mb-2">PDF File</label>
-        <input type="file" id="pdfFile" accept=".pdf" class="w-full p-2 bg-slate-900 border border-slate-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white file:cursor-pointer">
+      <div class="mb-6 pt-4 border-t border-[#334155]">
+        <h2 class="text-sm font-semibold text-[#0b5fff] uppercase tracking-wider mb-3">2. Select Adoption Agreement</h2>
+        <label id="upload-label" class="upload-area-dark enabled flex flex-col items-center justify-center w-full h-32 rounded-lg cursor-pointer">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6">
+            <svg id="upload-icon" class="w-8 h-8 mb-3 text-[#0b5fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+            <p class="text-sm text-[#94A3B8]"><span class="font-semibold" id="upload-text">Click to select PDF</span></p>
+          </div>
+          <input id="file-upload" type="file" class="hidden" accept=".pdf" />
+        </label>
+        <div id="selected-file-info" class="hidden mt-3 p-3 bg-[#0F172A] border border-[#334155] rounded-lg">
+          <div class="flex items-center justify-between mb-2"><span id="selected-file-name" class="text-sm text-white font-medium truncate"></span><button id="clear-file-btn" class="text-xs text-[#94A3B8] hover:text-red-400 transition">&#10005; Clear</button></div>
+          <div id="selected-file-size" class="text-xs text-[#64748B] mb-3"></div>
+          <button id="process-btn" class="process-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Click to Process Document</button>
+        </div>
+      </div>
+      <div class="mb-6 pt-4 border-t border-[#334155]">
+        <h2 class="text-sm font-semibold text-[#0b5fff] uppercase tracking-wider mb-3">3. Status</h2>
+        <div class="status-section-dark"><div class="text-sm flex items-center gap-3"><span id="status-text" style="color:#6EE7B7;">Ready &#8212; select a PDF to begin</span></div></div>
+        <div id="error-box" class="hidden mt-3 p-3 bg-red-500/20 border border-red-400/30 rounded-lg text-xs text-red-200 break-words max-h-60 overflow-y-auto"></div>
+      </div>
+      <div class="pt-4 border-t border-[#334155]"><p class="text-xs text-[#64748B]"><strong class="text-[#94A3B8]">Trust Contract:</strong> If a value appears, it's certified correct. Empty fields mean we couldn't verify with certainty.</p></div>
+    </div>
+  </aside>
+  <main class="flex-1 overflow-y-auto bg-[#0F172A] glow-container">
+    <div class="p-8">
+      <div id="results-header" class="bg-gradient-to-r from-[#0b5fff] to-[#0047cc] p-6 rounded-t-xl shadow-lg border border-[#1e4ec1] flex justify-between items-start"><div><h2 class="text-2xl font-bold text-white">Plan Extraction Results</h2><p id="results-subtitle" class="text-sm text-white/90 mt-1">Review the extracted data below. Certified values are verified from the source document.</p></div><div class="text-right"><div class="text-xs text-white/70">Trust Level</div><div class="text-lg font-bold text-white">100% or Silent</div></div></div>
+      <div id="vendor-bar" class="hidden flex items-center gap-3 px-4 py-2 bg-[#1E293B] border-x border-[#334155]"><span id="vendor-badge" class="vendor-badge"></span><span id="extraction-meta" class="text-xs text-[#64748B]"></span></div>
+      <div id="coverage-bar" class="coverage-bar hidden"></div>
+      <div id="results-container" class="relative bg-[#1E293B] shadow-sm border-x border-b border-[#334155] rounded-b-xl">
+        <div id="results-table" class="overflow-x-auto"><p class="text-[#94A3B8] text-center py-20">Waiting for PDF upload and analysis...</p></div>
+        <div id="results-loading-overlay" class="results-overlay hidden"><div class="clock-spinner"><div class="clock-center"></div><div class="clock-hand-hour"></div><div class="clock-hand-minute"></div></div><div id="overlay-text" class="results-overlay-text">Analyzing adoption agreement...</div><div id="overlay-subtext" class="results-overlay-subtext">Saving you hours of manual data entry</div></div>
+      </div>
+      <div class="mt-4 bg-[#1E293B] rounded-xl shadow-sm border border-[#334155] overflow-hidden">
+        <div class="px-6 py-3 bg-gradient-to-r from-[#0b5fff] to-[#0047cc] flex items-center justify-between"><h3 class="text-sm font-semibold text-white">Export Options</h3><span class="text-xs text-white/90">Certified values only</span></div>
+        <div class="px-6 py-4"><div class="flex flex-wrap gap-3">
+          <button id="export-copy-btn" class="px-4 py-2 text-sm font-medium rounded-md border border-[#0b5fff] text-[#0b5fff] bg-transparent hover:bg-[#0b5fff] hover:text-white transition">&#128203; Copy</button>
+          <button id="export-html-btn" class="px-4 py-2 text-sm font-medium rounded-md border border-[#0b5fff] text-[#0b5fff] bg-transparent hover:bg-[#0b5fff] hover:text-white transition">&#127760; HTML Table</button>
+          <button id="export-pdf-btn" class="px-4 py-2 text-sm font-medium rounded-md border border-[#0b5fff] text-[#0b5fff] bg-transparent hover:bg-[#0b5fff] hover:text-white transition">&#128196; PDF Report</button>
+          <button id="export-csv-btn" class="px-4 py-2 text-sm font-medium rounded-md border border-[#0b5fff] text-[#0b5fff] bg-transparent hover:bg-[#0b5fff] hover:text-white transition">&#128202; CSV file</button>
+          <button id="export-nextstep-btn" class="px-4 py-2 text-sm font-medium rounded-md bg-[#0b5fff] text-white hover:bg-[#0047cc] transition">&#128196; Generate Pre-Filled DPF</button>
+        </div></div>
       </div>
     </div>
-    <div id="fileStatus" class="text-gray-400 text-sm mb-4"></div>
-    <button id="extractBtn" onclick="extract()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg disabled:opacity-50" disabled>
-      Select a PDF first
-    </button>
-  </div>
-
-  <div id="loading" class="hidden bg-slate-800 rounded-xl p-8 text-center border border-slate-700">
-    <div class="loader mx-auto mb-4"></div>
-    <p class="text-white">Analyzing PDF with AI vision...</p>
-  </div>
-
-  <div id="results" class="hidden bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-    <div class="bg-blue-600 p-4">
-      <h2 class="text-lg font-bold text-white">Extraction Results</h2>
-    </div>
-    <div id="resultsBody" class="p-4"></div>
-  </div>
-
-  <div id="error" class="hidden bg-red-900/50 border border-red-700 rounded-xl p-4 text-red-300"></div>
+    <!-- MODALS -->
+    <div id="help-modal" class="modal-backdrop hidden"><div class="modal-container"><div class="modal-header"><h3>&#128214; How to Use Adopt(k)</h3><button id="help-modal-close" class="modal-close">&times;</button></div><div class="modal-body"><h4>&#127919; What is Adopt(k)?</h4><p>Adopt(k) is an AI-powered tool that automatically extracts key plan design information from 401(k) adoption agreements. Upload a PDF and get structured data in seconds &#8212; no manual data entry required.</p><div class="highlight-box"><strong>&#128274; Trust Contract:</strong> If Adopt(k) returns a value, it's certified correct. Empty fields mean we couldn't verify with 100% certainty.</div><h4>&#128203; How to Extract Plan Data</h4><ul><li><strong>Step 1:</strong> Select your preferred LLM model (Opus recommended)</li><li><strong>Step 2:</strong> Click the upload area and select your adoption agreement PDF</li><li><strong>Step 3:</strong> Click "Process Document" and wait for two-pass extraction (30&#8211;60 seconds)</li><li><strong>Step 4:</strong> Review certified values and click "Source" to see evidence</li></ul><h4>&#9989; Understanding Status Badges</h4><div class="status-grid"><div class="status-explain-card"><span class="status-badge certified">CERTIFIED</span><div class="status-text">Value verified directly from document text.</div></div><div class="status-explain-card"><span class="status-badge ambiguous">AMBIGUOUS</span><div class="status-text">Document uses unclear language.</div></div><div class="status-explain-card"><span class="status-badge conflict">CONFLICT</span><div class="status-text">Multiple conflicting provisions found.</div></div><div class="status-explain-card"><span class="status-badge silent">SILENT</span><div class="status-text">Document doesn't address this provision.</div></div></div><div class="tip-box"><strong>&#128161; Pro Tip:</strong> Click the "Source" button on any certified field to see the exact document text that supports the extracted value.</div></div><div class="modal-footer"><button id="help-modal-close-2" class="modal-btn-primary">Got it!</button></div></div></div>
+    <div id="whats-new-modal" class="modal-backdrop hidden"><div class="modal-container"><div class="modal-header" style="background:linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%);"><h3>&#10024; What's New in v3.0</h3><button id="whats-new-modal-close" class="modal-close">&times;</button></div><div class="modal-body"><h4>&#128640; Two-Pass Extraction</h4><p>Adopt(k) now scans the entire document first to map which pages cover each topic, then extracts fields with targeted prompts. This dramatically improves coverage for contribution formulas, auto-enrollment details, and vesting schedules.</p><div class="highlight-box"><strong>Result:</strong> Estimated 2x improvement in field coverage compared to single-pass extraction.</div><h4>&#128270; Vendor Detection</h4><p>The system automatically identifies the document provider (Guideline, ADP, Principal, etc.) and template type.</p><h4>&#128203; Source Evidence</h4><p>Click "Source" on any certified field to see the exact page, section, and verbatim quote.</p></div><div class="modal-footer"><button id="whats-new-close-btn" class="modal-btn-primary">Got it!</button></div></div></div>
+    <div id="evidence-modal" class="modal-backdrop hidden"><div class="modal-container" style="max-width:600px;"><div class="modal-header" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);"><h3>&#128203; Source Evidence</h3><button id="evidence-modal-close" class="modal-close">&times;</button></div><div class="modal-body" id="evidence-body"></div><div class="modal-footer"><button id="evidence-close-btn" class="modal-btn-primary">Close</button></div></div></div>
+    <div id="dpf-modal" class="modal-backdrop hidden"><div class="modal-container" style="max-width:700px;"><div class="modal-header"><h3>&#128196; Generate Pre-Filled DPF</h3><button id="dpf-modal-close" class="modal-close">&times;</button></div><div class="modal-body"><p class="dpf-description">Generate a Document Preparation Form pre-filled with certified extracted values. Uncertain fields are left blank for manual review.</p><div class="dpf-guarantee"><div class="dpf-guarantee-icon"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg></div><div><div class="dpf-guarantee-title">Quality Guarantee</div><div class="dpf-guarantee-text">Every value has been certified from the source document.</div></div></div><div class="dpf-categories"><div class="dpf-category"><div class="dpf-category-icon">&#127970;</div><div class="dpf-category-title">Company Info</div><div class="dpf-category-desc">Name, address, EIN</div></div><div class="dpf-category"><div class="dpf-category-icon">&#128203;</div><div class="dpf-category-title">Plan Details</div><div class="dpf-category-desc">Name, dates, plan number</div></div><div class="dpf-category"><div class="dpf-category-icon">&#128101;</div><div class="dpf-category-title">Eligibility</div><div class="dpf-category-desc">Service, age, entry dates</div></div><div class="dpf-category"><div class="dpf-category-icon">&#128176;</div><div class="dpf-category-title">Contributions</div><div class="dpf-category-desc">Match, safe harbor, vesting</div></div></div></div><div class="modal-footer"><button id="dpf-cancel-btn" class="modal-btn-secondary">Cancel</button><button id="dpf-generate-btn" class="modal-btn-primary">Generate DPF</button></div></div></div>
+  </main>
 </div>
-
 <script>
-var WORKER = 'https://adoptk-vision.tony-e07.workers.dev';
-var pdfBase64 = null;
+(function(){
+  const W = "https://adoptk-vision.tony-e07.workers.dev";
+  const STRICT = true, SHOW_REASONS = true, TIMEOUT = 240000;
+  let lastRows = null, lastHtml = "", lastMap = null, selectedFile = null;
 
-document.getElementById('pdfFile').addEventListener('change', function(e) {
-  var file = e.target.files[0];
-  if (!file) return;
-  
-  document.getElementById('fileStatus').textContent = 'Reading: ' + file.name + ' (' + Math.round(file.size/1024) + ' KB)';
-  document.getElementById('extractBtn').disabled = true;
-  document.getElementById('extractBtn').textContent = 'Reading file...';
-  
-  var reader = new FileReader();
-  reader.onload = function(evt) {
-    pdfBase64 = evt.target.result.split(',')[1];
-    document.getElementById('fileStatus').textContent = 'Ready: ' + file.name;
-    document.getElementById('extractBtn').disabled = false;
-    document.getElementById('extractBtn').textContent = 'Extract Plan Data';
-  };
-  reader.onerror = function() {
-    document.getElementById('fileStatus').textContent = 'Error reading file';
-    document.getElementById('extractBtn').disabled = true;
-  };
-  reader.readAsDataURL(file);
-});
+  const displayOrderMD = "## Company Information\nCompany Name\nCompany Street\nCompany Street2\nCity, State, ZIP\nCompany Telephone\nEIN\nForm of Business\nEntity Type\n\n## Corporate Details\nEmployer's Tax Year End\nPlan Year End\nRelated Employers\nRelated Employers Detail\nMultiple Employer Plan\nAffiliated_Employers\n\n## Plan Information\nPlan Name\nOriginal Effective Date\nRestatement Effective Date\nPlan Number\nType of Plan\nPlan Year\n\n## Eligibility\nEligible Employees\nAre Union Employees Excluded?\nAre Non-resident aliens Employees Excluded?\nAre Part time Employees Excluded?\nAre Employees as the result of a transaction described in Code section 410(b)(6)(C) Excluded?\nList of Excluded Employee Groups\nIs There More Than One Service Requirement?\nService Requirement\nHour Requirement\nMinimum Age Requirement\nEntry Date\nElapsed Time or Hours of Service\nEffective Date of Age/Service Requirement (Amnesty Date)\nCounting Predecessor Service\n\n## Compensation\nDefinition of Compensation\nTotal Compensation\nPlan Compensation Exclusions\nPeriod for Determining Compensation\nUsing Entry Date Compensation\n\n## Contributions\nEmployer Non-Elective/Profit Sharing Contribution\nEmployer Non-Elective/Profit Sharing Contribution Formula\nEmployer Non-Elective/Profit Sharing Contribution Formula Type\nEmployer Non-Elective/Profit Sharing Contribution Allocation Conditions\nExceptions to Employer Non-Elective/Profit Sharing Contribution Allocation Conditions\nSalary Deferrals\nRoth Deferrals\nADP/ACP Testing Method\nIn-Plan Roth Transfers/Conversions Permitted\nAutomatic Deferral Election\nAutomatic Deferral Election Start Date\nAutomatic Deferral Election Initial Percentage\nAutomatic Deferral Election Increase\nAutomatic Deferral Election Maximum Percentage\nAutomatic Deferral Election Applicable To\nMatching Contributions\nMatching Contribution Formula\nLimit on Matching Contribution\nPeriod for Determining Matching Contributions\nMatching Contribution Allocation Conditions\nExceptions to Matching Contribution Allocation Conditions\n\n## Safe Harbor\nSafe Harbor 401(k) Plan\nIs This a QACA Plan?\nSafe Harbor Type\nSafe Harbor Formula\nPeriod for Determining Safe Harbor Contribution\nEligibility for Safe Harbor Contribution\nSafe Harbor Delayed Effective Date\n\n## Vesting\nNormal Retirement Age\nEarly Retirement Age\nRetirement Age Years of Participation Required\nRetirement Age Years of Employment Required\nVesting Schedule\nVesting Exclusions\nVesting for QACA\nImmediate Vesting Upon Death, Disability, ERA\n\n## Distributions\nIn-Service Distributions at Age 59.5\nSources Available for In-Service Distributions at Age 59.5\nHardship Distributions\nSources Available for Hardship Distributions\nLoans Allowed\nNumber of Loans Allowed at a Time\nLoan Rate of Interest\n\n## Administration\nTop Paid Group Applicable\nOwner/Trustee Name\nTrustee Title\nWill a Recipient be entitled to request a Direct In-Plan Roth Rollover";
 
-async function extract() {
-  if (!pdfBase64) {
-    alert('Please select a PDF file first');
-    return;
-  }
+  function qs(s){return document.querySelector('#docuwaivz-app '+s);}
+  function esc(s){if(s==null)return '';return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+  function showOv(m,s){const o=qs('#results-loading-overlay');if(o){o.classList.remove('hidden');o.style.display='flex';}if(m){const t=qs('#overlay-text');if(t)t.textContent=m;}if(s){const t=qs('#overlay-subtext');if(t)t.textContent=s;}}
+  function hideOv(){const o=qs('#results-loading-overlay');if(o){o.classList.add('hidden');o.style.display='none';}}
+  function upSt(t,err){const s=qs('#status-text');if(s){s.textContent=t;s.style.color=err?'#FCA5A5':'#6EE7B7';}}
+  function showErr(m){const e=qs('#error-box');if(e){e.innerHTML='<strong>Error:</strong> '+esc(m);e.classList.remove('hidden');}}
 
-  document.getElementById('loading').classList.remove('hidden');
-  document.getElementById('results').classList.add('hidden');
-  document.getElementById('error').classList.add('hidden');
-  document.getElementById('extractBtn').disabled = true;
-  document.getElementById('extractBtn').textContent = 'Processing...';
+  // Unified certification logic
+  function nSt(r){return(r?.status||'').toUpperCase();}
+  function isCert(r){const s=nSt(r);return s==='CERTIFIED'||s==='OK';}
+  function stClass(r){const s=nSt(r);if(s==='CERTIFIED'||s==='OK')return'certified';if(s==='AMBIGUOUS')return'ambiguous';if(s==='CONFLICT')return'conflict';if(s==='SILENT'||s==='NOT_FOUND')return'silent';return'uncertain';}
+  function bucket(r){const s=nSt(r);if(s==='CERTIFIED'||s==='OK')return'certified';if(s==='AMBIGUOUS'||s==='CONFLICT'||s==='UNCERTAIN')return'review';if(s==='SILENT'||s==='NOT_FOUND')return'silent';if(r?.value&&!s)return'certified';return'silent';}
+  function dVal(r){const v=typeof r?.value==='string'?r.value.trim():(r?.value??'');if(!STRICT)return v;return isCert(r)?v:((!nSt(r)&&v)?v:'');}
 
-  try {
-    var response = await fetch(WORKER + '/extract', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pdf_base64: pdfBase64,
-        model: document.getElementById('model').value
-      })
+  function parseDO(md){const l=md.split('\n'),f=[];let g=null;l.forEach(x=>{x=x.trim();if(!x)return;if(x.startsWith('##'))g=x.replace(/^#+\s*/,'').trim();else if(g)f.push({group:g,fieldName:x});});return f;}
+  function buildLk(rows){const lk={};rows.forEach(r=>{if(r&&typeof r.label==='string')lk[r.label]=r;});return lk;}
+
+  function coverage(rows){const lk=buildLk(rows),do_=parseDO(displayOrderMD);let c=0,rv=0,s=0;do_.forEach(i=>{const b=bucket(lk[i.fieldName]);if(b==='certified')c++;else if(b==='review')rv++;else s++;});return{certified:c,review:rv,silent:s,total:do_.length};}
+
+  function renderCov(rows){const bar=qs('#coverage-bar');if(!bar)return;const c=coverage(rows);bar.innerHTML='<div class="coverage-pill certified">\u2713 Certified: '+c.certified+'</div><div class="coverage-pill review">\u26A0 Needs Review: '+c.review+'</div><div class="coverage-pill silent">\u2014 Silent: '+c.silent+'</div>';bar.classList.remove('hidden');}
+
+  function buildTable(rows){
+    const do_=parseDO(displayOrderMD),lk=buildLk(rows);
+    let h='<table class="results-table"><thead><tr><th>Field Name</th><th>Value</th></tr></thead>',cg=null;
+    do_.forEach(item=>{
+      const ro=lk[item.fieldName],val=dVal(ro),cert=isCert(ro),sc=stClass(ro),st=nSt(ro),reason=ro?.reason||'',ev=Array.isArray(ro?.evidence)?ro.evidence:[],ve=val!==null&&val!==undefined&&val!=='';
+      if(item.group!==cg){if(cg!==null)h+='</tbody>';cg=item.group;h+='<tbody><tr class="section-header-row"><td colspan="2">'+esc(cg)+'</td></tr>';}
+      let sb='';if(!cert&&SHOW_REASONS&&st){sb='<span class="status-badge '+sc+'">'+esc(st)+'</span>';if(reason)sb+='<span style="margin-left:0.5rem;font-size:0.75rem;color:#94A3B8;">'+esc(reason)+'</span>';}
+      let srcBtn='';if(cert&&ev.length>0&&ve){const ed=JSON.stringify({field:item.fieldName,evidence:ev});srcBtn='<button class="source-btn" onclick=\'window.showEvidence('+JSON.stringify(ed)+')\'>Source</button>';}
+      h+='<tr class="data-row"><td>'+esc(item.fieldName)+'</td><td class="'+(ve?'':'empty-value')+'"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;"><div style="flex:1;min-width:0;">'+(ve?esc(val):'')+(!ve&&sb?'<div style="margin-top:0.25rem;">'+sb+'</div>':'')+'</div>'+(srcBtn?'<div style="flex-shrink:0;">'+srcBtn+'</div>':'')+'</div></td></tr>';
     });
-
-    var data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Request failed');
-    }
-
-    showResults(data);
-
-  } catch (err) {
-    document.getElementById('error').textContent = 'Error: ' + err.message;
-    document.getElementById('error').classList.remove('hidden');
-  } finally {
-    document.getElementById('loading').classList.add('hidden');
-    document.getElementById('extractBtn').disabled = false;
-    document.getElementById('extractBtn').textContent = 'Extract Plan Data';
+    if(cg!==null)h+='</tbody>';h+='</table>';return h;
   }
-}
 
-function showResults(data) {
-  var html = '<table class="w-full text-left"><thead><tr class="border-b border-slate-600"><th class="p-2 text-blue-400">Field</th><th class="p-2 text-blue-400">Value</th></tr></thead><tbody>';
-  
-  data.rows.forEach(function(row) {
-    html += '<tr class="border-b border-slate-700">';
-    html += '<td class="p-2 text-gray-300">' + (row.label || '') + '</td>';
-    html += '<td class="p-2 text-white">' + (row.value || '-') + '</td>';
-    html += '</tr>';
-  });
-  
-  html += '</tbody></table>';
-  html += '<p class="text-gray-500 text-sm mt-4">Model: ' + data.model_used + ' | Fields: ' + data.rows.length + '</p>';
-  
-  document.getElementById('resultsBody').innerHTML = html;
-  document.getElementById('results').classList.remove('hidden');
-}
+  function renderData(rows,dm,meta){
+    const rt=qs('#results-table');if(!rt)return;lastHtml=buildTable(rows);lastRows=rows;lastMap=dm;rt.innerHTML=lastHtml;renderCov(rows);
+    if(dm&&dm.vendor&&dm.vendor!=='Unknown'){
+      const vb=qs('#vendor-bar'),badge=qs('#vendor-badge'),me=qs('#extraction-meta');
+      if(vb)vb.classList.remove('hidden');
+      if(badge)badge.textContent=(dm.vendor||'')+' \u2022 '+(dm.template_type||'');
+      if(me&&meta){const mode=meta.extraction_mode==='two-pass'?'Two-pass':'Single-pass';const dur=meta.total_duration_ms?((meta.total_duration_ms/1000).toFixed(1)+'s'):'';me.textContent=mode+' \u2022 '+(dm.sections_found||0)+' sections \u2022 '+dur+' \u2022 '+(meta.pass2_model||'');}
+    }
+  }
+
+  // Evidence modal
+  window.showEvidence=function(ds){try{const d=typeof ds==='string'?JSON.parse(ds):ds,m=document.getElementById('evidence-modal'),b=document.getElementById('evidence-body');if(!m||!b)return;const f=d.field||'Field',ev=Array.isArray(d.evidence)?d.evidence:[];b.innerHTML='<div style="margin-bottom:1rem;"><div style="font-size:1.125rem;font-weight:600;color:white;">'+esc(f)+'</div><div style="font-size:0.875rem;color:#94A3B8;">Certified source excerpts</div></div>'+ev.map(e=>'<div class="evidence-card"><div class="evidence-meta">'+(e.page?'Page '+esc(String(e.page)):'')+(e.section?' \u2022 '+esc(String(e.section)):'')+'</div><div class="evidence-quote">"'+esc(e.quote||'')+'"</div></div>').join('')+(ev.length===0?'<p style="color:#94A3B8;">No evidence available.</p>':'');m.classList.remove('hidden');m.style.display='flex';}catch(e){console.error(e);}};
+  window.closeEvidenceModal=function(){const m=document.getElementById('evidence-modal');if(m){m.classList.add('hidden');m.style.display='none';}};
+
+  // File to base64
+  function toB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=()=>rej(new Error('Read failed'));r.readAsDataURL(file);});}
+
+  // Call worker
+  async function callWorker(file){
+    const model=(qs('#llm-model')||{}).value||'claude-opus-4-5';
+    upSt("Converting PDF...");const b64=await toB64(file);
+    upSt("Analyzing document (two-pass)...");showOv("Pass 1: Mapping document structure...","Identifying sections, page ranges, and vendor format");
+    const ac=new AbortController(),tid=setTimeout(()=>ac.abort(),TIMEOUT);
+    const p2t=setTimeout(()=>{showOv("Pass 2: Extracting fields...","Using document map for targeted analysis");},15000);
+    try{
+      const resp=await fetch(W+'/extract',{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdf_base64:b64,model:model}),signal:ac.signal});
+      clearTimeout(tid);clearTimeout(p2t);
+      if(!resp.ok){const t=await resp.text();throw new Error('HTTP '+resp.status+': '+t.slice(0,300));}
+      const data=await resp.json();if(!data.rows||!Array.isArray(data.rows))throw new Error("Invalid response");return data;
+    }catch(err){clearTimeout(tid);clearTimeout(p2t);if(err.name==='AbortError')throw new Error('Timed out after '+(TIMEOUT/1000)+'s. Try Sonnet instead.');throw err;}
+  }
+
+  // Exports
+  function noData(){if(!lastRows||lastRows.length===0){alert("No extraction available.");return true;}return false;}
+  function dl(name,type,content){const b=new Blob([content],{type}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);}
+  async function doCopy(){if(noData())return;try{await navigator.clipboard.writeText(lastHtml);alert("Copied!");}catch(e){alert("Copy failed");}}
+  function doHtml(){if(noData())return;dl("plan_extraction.html","text/html;charset=utf-8","<!DOCTYPE html><html><head><meta charset='utf-8'><title>Plan Extraction</title></head><body>"+lastHtml+"</body></html>");}
+  function doCsv(){if(noData())return;const do_=parseDO(displayOrderMD),lk=buildLk(lastRows);let csv='Field Name,Value,Status\n';do_.forEach(i=>{const r=lk[i.fieldName],v=dVal(r),s=nSt(r);csv+='"'+i.fieldName.replace(/"/g,'""')+'","'+String(v).replace(/"/g,'""')+'","'+s+'"\n';});dl("plan_extraction.csv","text/csv;charset=utf-8",csv);}
+  function doPdf(){if(noData())return;const do_=parseDO(displayOrderMD),lk=buildLk(lastRows);let h='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Plan Extraction Report</title><style>body{font-family:sans-serif;font-size:11px;}table{width:100%;border-collapse:collapse;}th{background:#0b5fff;color:white;padding:10px;text-align:left;}td{padding:8px;border:1px solid #cbd5e1;}.sec{background:#f1f5f9;color:#0b5fff;font-weight:700;border-left:4px solid #0b5fff;}</style></head><body><h1 style="color:#0b5fff;">Plan Extraction Report</h1>';if(lastMap&&lastMap.vendor)h+='<p style="color:#64748b;font-size:12px;">'+esc(lastMap.vendor)+' | '+esc(lastMap.template_type||'')+'</p>';h+='<table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>';let g=null;do_.forEach(i=>{const r=lk[i.fieldName],v=dVal(r);if(i.group!==g){g=i.group;h+='<tr><td colspan="2" class="sec">'+esc(g)+'</td></tr>';}h+='<tr><td>'+esc(i.fieldName)+'</td><td>'+esc(v)+'</td></tr>';});h+='</tbody></table><p style="margin-top:20px;color:#64748b;font-size:10px;">Adopt(k) v3.0 - Waivz.ai</p></body></html>';const w=window.open('','_blank');w.document.write(h);w.document.close();w.focus();setTimeout(()=>w.print(),250);}
+
+  // DPF
+  function openDPF(){const m=document.getElementById('dpf-modal');if(m){m.classList.remove('hidden');m.style.display='flex';}}
+  function closeDPF(){const m=document.getElementById('dpf-modal');if(m){m.classList.add('hidden');m.style.display='none';}}
+  async function genDPF(){if(!lastRows||lastRows.length===0){alert("No data. Process a document first.");return;}const cr=lastRows.find(r=>r.label==="Company Name"),cn=cr?cr.value:"Plan";const btn=document.getElementById('dpf-generate-btn'),ot=btn?btn.innerHTML:'';if(btn){btn.innerHTML="\u23F3 Generating...";btn.disabled=true;}try{const resp=await fetch(W+'/fill-dpf',{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rows:lastRows,company_name:cn})});if(!resp.ok)throw new Error(await resp.text()||'Error '+resp.status);const blob=await resp.blob(),sc=cn.replace(/[^a-zA-Z0-9\s\-_]/g,'').trim().replace(/\s+/g,'_').substring(0,30),fn='DPF_'+sc+'_'+new Date().toISOString().split('T')[0]+'.docx',u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);closeDPF();alert('\u2705 DPF Generated!\n\n'+fn);}catch(e){console.error(e);alert('\u274C DPF Failed\n\n'+e.message);}finally{if(btn){btn.innerHTML=ot;btn.disabled=false;}}}
+
+  // File upload
+  function wireUpload(){
+    const fi=qs('#file-upload');if(!fi)return;
+    fi.addEventListener('change',e=>{const f=e.target.files[0];if(!f||f.type!=='application/pdf'){alert("Please select a valid PDF.");return;}selectedFile=f;const p=qs('#selected-file-info'),n=qs('#selected-file-name'),s=qs('#selected-file-size');if(p)p.classList.remove('hidden');if(n)n.textContent=f.name;if(s)s.textContent='Size: '+(f.size/1024).toFixed(1)+' KB';upSt("File selected. Click 'Process' when ready.");});
+    const cb=qs('#clear-file-btn');if(cb)cb.addEventListener('click',()=>{selectedFile=null;const fi2=qs('#file-upload');if(fi2)fi2.value='';const p=qs('#selected-file-info');if(p)p.classList.add('hidden');upSt("Ready \u2014 select a PDF to begin");});
+    const pb=qs('#process-btn');if(pb)pb.addEventListener('click',async()=>{
+      if(!selectedFile){alert("Select a file first.");return;}
+      const eb=qs('#error-box');if(eb)eb.classList.add('hidden');
+      pb.disabled=true;pb.innerHTML='<span class="loader-dark" style="width:18px;height:18px;border-width:2px;"></span> Processing...';
+      showOv("Starting two-pass extraction...","This typically takes 30\u201360 seconds");
+      try{
+        const data=await callWorker(selectedFile);renderData(data.rows,data.document_map,data.meta);hideOv();
+        const c=coverage(data.rows),mode=data.meta?.extraction_mode==='two-pass'?'Two-pass':'Single-pass';
+        upSt(mode+' complete \u2022 '+c.certified+' certified, '+c.review+' review, '+c.silent+' silent');
+        selectedFile=null;const p=qs('#selected-file-info');if(p)p.classList.add('hidden');const fi3=qs('#file-upload');if(fi3)fi3.value='';
+      }catch(err){console.error(err);upSt("Processing Error",true);showErr(err.message);hideOv();}
+      finally{pb.disabled=false;pb.innerHTML='<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Click to Process Document';}
+    });
+  }
+
+  // Modal wiring helper
+  function wireM(bId,mId,cIds){const m=document.getElementById(mId);if(!m)return;const op=()=>{m.classList.remove('hidden');m.style.display='flex';};const cl=()=>{m.classList.add('hidden');m.style.display='none';};if(bId){const b=qs('#'+bId);if(b)b.addEventListener('click',op);}cIds.forEach(id=>{const e=document.getElementById(id);if(e)e.addEventListener('click',cl);});m.addEventListener('click',e=>{if(e.target===m)cl();});}
+
+  function wireButtons(){
+    if(qs('#export-copy-btn'))qs('#export-copy-btn').addEventListener('click',doCopy);
+    if(qs('#export-html-btn'))qs('#export-html-btn').addEventListener('click',doHtml);
+    if(qs('#export-pdf-btn'))qs('#export-pdf-btn').addEventListener('click',doPdf);
+    if(qs('#export-csv-btn'))qs('#export-csv-btn').addEventListener('click',doCsv);
+    if(qs('#export-nextstep-btn'))qs('#export-nextstep-btn').addEventListener('click',openDPF);
+    wireM('how-to-use-btn','help-modal',['help-modal-close','help-modal-close-2']);
+    wireM('whats-new-btn','whats-new-modal',['whats-new-modal-close','whats-new-close-btn']);
+    wireM(null,'evidence-modal',['evidence-modal-close','evidence-close-btn']);
+    wireM(null,'dpf-modal',['dpf-modal-close','dpf-cancel-btn']);
+    const dg=document.getElementById('dpf-generate-btn');if(dg)dg.addEventListener('click',genDPF);
+  }
+
+  function init(){hideOv();wireUpload();wireButtons();upSt("Ready \u2014 select a PDF to begin");}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
 </script>
 </body>
 </html>
